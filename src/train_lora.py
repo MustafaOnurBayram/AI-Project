@@ -112,7 +112,7 @@ def main():
         save_strategy="epoch",
         load_best_model_at_end=True,
         metric_for_best_model="f1",
-        fp16=torch.cuda.is_available(),
+        fp16=(torch.cuda.is_available() and args.model != "deberta"),
         logging_steps=100,
         seed=SEED,
         report_to="none",
