@@ -145,6 +145,7 @@ def error_analysis(dataset_tag="imdb"):
     # Show first 10 errors
     print("=== Sample Misclassifications ===")
     for i, idx in enumerate(wrong_idx[:10]):
+        idx = int(idx)  # Cast to native python int for HF dataset indexing
         print(f"\n--- Error {i+1} ---")
         print(f"  True: {'positive' if labels[idx]==1 else 'negative'}")
         print(f"  Pred: {'positive' if preds[idx]==1 else 'negative'}")
