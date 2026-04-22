@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual Environments
+venv/
+env/
+.env/
+.venv/
+env.bak/
+venv.bak/
+
+# Project Specific Large/Generated Files
+checkpoints/
+results/
+*.npz
+*.pkl
+
+# Machine Learning / Deep Learning
+*.pt
+*.pth
+*.bin
+*.ckpt
+*.safetensors
+
+# OS Generated
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
