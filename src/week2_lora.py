@@ -41,7 +41,7 @@ MODELS_TO_TRAIN = [
     },
     {
         "name": "DeBERTa",
-        "hf_path": "microsoft/deberta-base",
+        "hf_path": "microsoft/deberta-v3-base",
         "save_dir": os.path.join(BASE_DIR, "models", "deberta_lora")
     }
 ]

@@ -120,8 +120,8 @@ def main():
     
     print("\nLoading DeBERTa LoRA...")
     print("Generating DeBERTa predictions...")
-    train_probs_deberta = get_lora_probs(meta_train_texts, DEBERTA_DIR, "microsoft/deberta-base")
-    test_probs_deberta = get_lora_probs(meta_test_texts, DEBERTA_DIR, "microsoft/deberta-base")
+    train_probs_deberta = get_lora_probs(meta_train_texts, DEBERTA_DIR, "microsoft/deberta-v3-base")
+    test_probs_deberta = get_lora_probs(meta_test_texts, DEBERTA_DIR, "microsoft/deberta-v3-base")
     
     # ---------------------------------------------------------
     # 3. Stack Predictions into Features

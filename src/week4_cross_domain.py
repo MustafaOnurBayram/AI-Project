@@ -90,7 +90,7 @@ def main():
     # 3. Evaluate DeBERTa LoRA
     # ---------------------------------------------------------
     print("\nLoading DeBERTa LoRA...")
-    deberta_probs = get_lora_probs(texts, DEBERTA_DIR, "microsoft/deberta-base")
+    deberta_probs = get_lora_probs(texts, DEBERTA_DIR, "microsoft/deberta-v3-base")
     deberta_preds = (deberta_probs >= 0.5).astype(int)
     deberta_acc = accuracy_score(true_labels, deberta_preds)
     print(f"DeBERTa LoRA Cross-Domain Accuracy: {deberta_acc * 100:.2f}%")
