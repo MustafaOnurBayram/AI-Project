@@ -1,11 +1,12 @@
 import os
 import time
+import json
 import numpy as np
 import torch
 from datasets import load_dataset
 from sentence_transformers import SentenceTransformer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pickle
@@ -28,10 +29,12 @@ import pickle
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATASET_DIR = os.path.join(BASE_DIR, "dataset")
 MODEL_DIR = os.path.join(BASE_DIR, "models", "sbert_baseline")
+RESULTS_DIR = os.path.join(BASE_DIR, "results")
 
 # Ensure the output directories exist
 os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(MODEL_DIR, exist_ok=True)
+os.makedirs(RESULTS_DIR, exist_ok=True)
 
 def main():
     print("Starting Week 1: SBERT + Logistic Regression Baseline")
@@ -145,6 +148,40 @@ def main():
     with open(model_path, 'wb') as f:
         pickle.dump(clf, f)
     print(f"Trained Logistic Regression model saved to {model_path}")
+    
+    # ---------------------------------------------------------
+    # 7. Save Results to results/ folder
+    # ---------------------------------------------------------
+    precision = precision_score(test_labels, predictions)
+    recall = recall_score(test_labels, predictions)
+    
+    results = {
+        "model": "SBERT + LogReg (Baseline)",
+        "accuracy": round(accuracy * 100, 2),
+        "f1": round(f1 * 100, 2),
+        "precision": round(precision * 100, 2),
+        "recall": round(recall * 100, 2),
+        "trainable_params": 0,
+        "training_time_seconds": round(time.time() - start_time, 1),
+        "confusion_matrix": cm.tolist(),
+    }
+    
+    results_path = os.path.join(RESULTS_DIR, "week1_baseline.json")
+    with open(results_path, 'w') as f:
+        json.dump(results, f, indent=2)
+    print(f"\n✓ Results saved to {results_path}")
+
+    # Also save confusion matrix plot to results/
+    cm_results_path = os.path.join(RESULTS_DIR, "week1_confusion_matrix.png")
+    plt.figure(figsize=(6, 5))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=['Fake', 'Real'], yticklabels=['Fake', 'Real'])
+    plt.title('Baseline SBERT + LogReg Confusion Matrix')
+    plt.xlabel('Predicted Label')
+    plt.ylabel('True Label')
+    plt.savefig(cm_results_path, dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"✓ Confusion matrix saved to {cm_results_path}")
 
 if __name__ == "__main__":
     main()

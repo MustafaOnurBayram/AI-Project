@@ -1,5 +1,6 @@
 import os
 import time
+import json
 import torch
 from datasets import load_dataset
 from transformers import (
@@ -10,7 +11,7 @@ from transformers import (
     DataCollatorWithPadding
 )
 from peft import get_peft_model, LoraConfig, TaskType
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 import numpy as np
 
 # ==========================================
@@ -28,6 +29,8 @@ import numpy as np
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATASET_DIR = os.path.join(BASE_DIR, "dataset")
+RESULTS_DIR = os.path.join(BASE_DIR, "results")
+os.makedirs(RESULTS_DIR, exist_ok=True)
 
 # We will iterate over two models as requested in the PDF
 MODELS_TO_TRAIN = [
@@ -44,12 +47,14 @@ MODELS_TO_TRAIN = [
 ]
 
 def compute_metrics(eval_pred):
-    """Computes accuracy and F1 score for the Trainer."""
+    """Computes accuracy, F1, precision and recall for the Trainer."""
     predictions, labels = eval_pred
     predictions = np.argmax(predictions, axis=1)
     acc = accuracy_score(labels, predictions)
     f1 = f1_score(labels, predictions)
-    return {"accuracy": acc, "f1": f1}
+    prec = precision_score(labels, predictions)
+    rec = recall_score(labels, predictions)
+    return {"accuracy": acc, "f1": f1, "precision": prec, "recall": rec}
 
 def train_lora_model(model_info, dataset):
     print(f"\n{'='*50}")
@@ -152,6 +157,40 @@ def train_lora_model(model_info, dataset):
     peft_model.save_pretrained(model_info['save_dir'])
     tokenizer.save_pretrained(model_info['save_dir'])
     print(f"Done! {model_info['name']} LoRA adapter saved to {model_info['save_dir']}")
+    
+    # ---------------------------------------------------------
+    # 5. Evaluate on test set and save results
+    # ---------------------------------------------------------
+    eval_split = "test" if "test" in tokenized_datasets.keys() else "validation"
+    test_dataset = tokenized_datasets[eval_split]
+    
+    eval_results = trainer.evaluate(test_dataset)
+    
+    total_params = sum(p.numel() for p in peft_model.parameters())
+    trainable_params = sum(p.numel() for p in peft_model.parameters() if p.requires_grad)
+    
+    results = {
+        "model": f"{model_info['name']} + LoRA",
+        "accuracy": round(eval_results.get('eval_accuracy', 0) * 100, 2),
+        "f1": round(eval_results.get('eval_f1', 0) * 100, 2),
+        "precision": round(eval_results.get('eval_precision', 0) * 100, 2),
+        "recall": round(eval_results.get('eval_recall', 0) * 100, 2),
+        "total_params": total_params,
+        "trainable_params": trainable_params,
+        "trainable_pct": round(100 * trainable_params / total_params, 4),
+        "training_time_seconds": round(train_time, 1),
+        "lora_r": 8,
+        "lora_alpha": 32,
+        "fp16_used": use_fp16,
+    }
+    
+    tag = model_info['name'].lower()
+    results_path = os.path.join(RESULTS_DIR, f"week2_{tag}_lora.json")
+    with open(results_path, 'w') as f:
+        json.dump(results, f, indent=2)
+    print(f"\n✓ Results saved to {results_path}")
+    print(f"  Accuracy: {results['accuracy']}% | F1: {results['f1']}%")
+    print(f"  Trainable params: {trainable_params:,} / {total_params:,} ({results['trainable_pct']}%)")
 
 
 def main():

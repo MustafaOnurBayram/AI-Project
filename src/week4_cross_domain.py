@@ -1,9 +1,10 @@
 import os
 import torch
 import pickle
+import json
 import numpy as np
 from datasets import load_dataset
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, f1_score
 
 # We can reuse the probability functions from week 3
 import sys
@@ -31,6 +32,8 @@ ROBERTA_DIR = os.path.join(BASE_DIR, "models", "roberta_lora")
 DEBERTA_DIR = os.path.join(BASE_DIR, "models", "deberta_lora")
 ENSEMBLE_2_3_PATH = os.path.join(BASE_DIR, "models", "ensemble", "meta_learner_2_3.pkl")
 ENSEMBLE_FULL_PATH = os.path.join(BASE_DIR, "models", "ensemble", "meta_learner_full.pkl")
+RESULTS_DIR = os.path.join(BASE_DIR, "results")
+os.makedirs(RESULTS_DIR, exist_ok=True)
 
 def prepare_gonzalo_dataset():
     """Load and format the local GonzaloA dataset for cross-domain testing."""
@@ -131,6 +134,32 @@ def main():
     print(f"5. Full Stack (1+2+3)  | {ensemble_full_acc * 100:.2f}%")
     print("="*50)
     print("KEY INSIGHT: Look for the model that drops the least compared to in-domain accuracy!")
+    
+    # ---------------------------------------------------------
+    # Save all cross-domain results to results/ folder
+    # ---------------------------------------------------------
+    sbert_f1 = f1_score(true_labels, sbert_preds)
+    roberta_f1 = f1_score(true_labels, roberta_preds)
+    deberta_f1 = f1_score(true_labels, deberta_preds)
+    ensemble_2_3_f1 = f1_score(true_labels, ensemble_2_3_preds)
+    ensemble_full_f1 = f1_score(true_labels, ensemble_full_preds)
+    
+    cross_domain_results = {
+        "dataset": "GonzaloA FakeNews",
+        "num_samples": len(true_labels),
+        "models": [
+            {"name": "SBERT + LogReg", "accuracy": round(sbert_acc * 100, 2), "f1": round(sbert_f1 * 100, 2)},
+            {"name": "RoBERTa + LoRA", "accuracy": round(roberta_acc * 100, 2), "f1": round(roberta_f1 * 100, 2)},
+            {"name": "DeBERTa + LoRA", "accuracy": round(deberta_acc * 100, 2), "f1": round(deberta_f1 * 100, 2)},
+            {"name": "Stacked (2+3)", "accuracy": round(ensemble_2_3_acc * 100, 2), "f1": round(ensemble_2_3_f1 * 100, 2)},
+            {"name": "Full Stack (1+2+3)", "accuracy": round(ensemble_full_acc * 100, 2), "f1": round(ensemble_full_f1 * 100, 2)},
+        ]
+    }
+    
+    results_path = os.path.join(RESULTS_DIR, "week4_cross_domain.json")
+    with open(results_path, 'w') as f:
+        json.dump(cross_domain_results, f, indent=2)
+    print(f"\n\u2713 Cross-domain results saved to {results_path}")
 
 if __name__ == "__main__":
     main()

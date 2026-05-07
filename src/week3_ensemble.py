@@ -1,13 +1,14 @@
 import os
 import torch
 import pickle
+import json
 import numpy as np
 from datasets import load_dataset
 from sentence_transformers import SentenceTransformer
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from peft import PeftModel
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
 # ==========================================
 # WEEK 3: Stacked Ensemble Meta-Learner
@@ -34,8 +35,10 @@ SBERT_MODEL_PATH = os.path.join(BASE_DIR, "models", "sbert_baseline", "logreg_ba
 ROBERTA_DIR = os.path.join(BASE_DIR, "models", "roberta_lora")
 DEBERTA_DIR = os.path.join(BASE_DIR, "models", "deberta_lora")
 ENSEMBLE_DIR = os.path.join(BASE_DIR, "models", "ensemble")
+RESULTS_DIR = os.path.join(BASE_DIR, "results")
 
 os.makedirs(ENSEMBLE_DIR, exist_ok=True)
+os.makedirs(RESULTS_DIR, exist_ok=True)
 
 def get_sbert_probs(texts, model_sbert, logreg_model):
     """Generate probability predictions from the SBERT Baseline."""
@@ -177,6 +180,40 @@ def main():
         
     print(f"\nModel 4 saved to {path_2_3}")
     print(f"Model 5 saved to {path_full}")
+    
+    # ---------------------------------------------------------
+    # 7. Save Results to results/ folder
+    # ---------------------------------------------------------
+    prec_2_3 = precision_score(meta_test_labels, preds_2_3)
+    rec_2_3 = recall_score(meta_test_labels, preds_2_3)
+    prec_full = precision_score(meta_test_labels, preds_full)
+    rec_full = recall_score(meta_test_labels, preds_full)
+    
+    results_4 = {
+        "model": "Stacked Ensemble (RoBERTa + DeBERTa)",
+        "accuracy": round(acc_2_3 * 100, 2),
+        "f1": round(f1_2_3 * 100, 2),
+        "precision": round(prec_2_3 * 100, 2),
+        "recall": round(rec_2_3 * 100, 2),
+    }
+    results_5 = {
+        "model": "Full Stack (SBERT + RoBERTa + DeBERTa)",
+        "accuracy": round(acc_full * 100, 2),
+        "f1": round(f1_full * 100, 2),
+        "precision": round(prec_full * 100, 2),
+        "recall": round(rec_full * 100, 2),
+        "meta_weights": {
+            "sbert": round(meta_clf_full.coef_[0][0], 4),
+            "roberta": round(meta_clf_full.coef_[0][1], 4),
+            "deberta": round(meta_clf_full.coef_[0][2], 4),
+        }
+    }
+    
+    for name, data in [("week3_ensemble_2_3", results_4), ("week3_ensemble_full", results_5)]:
+        path = os.path.join(RESULTS_DIR, f"{name}.json")
+        with open(path, 'w') as f:
+            json.dump(data, f, indent=2)
+        print(f"\u2713 Results saved to {path}")
 
 if __name__ == "__main__":
     main()
