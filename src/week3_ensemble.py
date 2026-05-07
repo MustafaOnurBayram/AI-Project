@@ -73,9 +73,18 @@ def main():
     print("Starting Week 3: Ensemble Building")
     
     # ---------------------------------------------------------
-    # 1. Load Data
+    # 1. Load Data from local TSV files
     # ---------------------------------------------------------
-    dataset = load_dataset('ErfanMoosaviMonazzah/fake-news-detection-dataset-English', cache_dir=DATASET_DIR)
+    print(f"Loading local primary dataset from TSV files...")
+    local_data_dir = os.path.join(DATASET_DIR, "ErfanMoosaviMonazzah___fake-news-detection-dataset-english")
+    
+    data_files = {
+        "train": os.path.join(local_data_dir, "train.tsv"),
+        "validation": os.path.join(local_data_dir, "validation.tsv"),
+        "test": os.path.join(local_data_dir, "test.tsv")
+    }
+    
+    dataset = load_dataset('csv', data_files=data_files, delimiter='\t')
     # Use validation set to train the meta-learner to avoid overfitting on the training set
     # If no validation set exists, we split the training set, but we assume 'test' acts as our validation here.
     # In a real scenario, you'd split train into train/val. Here we use 'test' to train the ensemble,

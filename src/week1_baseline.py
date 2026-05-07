@@ -1,6 +1,7 @@
 import os
 import time
 import numpy as np
+import torch
 from datasets import load_dataset
 from sentence_transformers import SentenceTransformer
 from sklearn.linear_model import LogisticRegression
@@ -36,15 +37,21 @@ def main():
     print("Starting Week 1: SBERT + Logistic Regression Baseline")
     
     # ---------------------------------------------------------
-    # 1. Load the primary dataset
+    # 1. Load the primary dataset from local TSV files
     # ---------------------------------------------------------
-    # We use huggingface datasets library. We'll cache it in our dataset directory.
-    print(f"Loading dataset 'ErfanMoosaviMonazzah/fake-news-detection-dataset-English'...")
-    # NOTE: The dataset contains 'train', 'validation' (or 'val'), and 'test' splits
-    dataset = load_dataset(
-        'ErfanMoosaviMonazzah/fake-news-detection-dataset-English', 
-        cache_dir=DATASET_DIR
-    )
+    print(f"Loading local dataset from TSV files...")
+    
+    # Path to the local ErfanMoosavi dataset folder
+    local_data_dir = os.path.join(DATASET_DIR, "ErfanMoosaviMonazzah___fake-news-detection-dataset-english")
+    
+    data_files = {
+        "train": os.path.join(local_data_dir, "train.tsv"),
+        "validation": os.path.join(local_data_dir, "validation.tsv"),
+        "test": os.path.join(local_data_dir, "test.tsv")
+    }
+    
+    # Load using 'csv' builder with tab delimiter
+    dataset = load_dataset('csv', data_files=data_files, delimiter='\t')
     
     print("Dataset loaded successfully!")
     print(dataset)
@@ -71,17 +78,22 @@ def main():
     # ---------------------------------------------------------
     # SBERT (Sentence-BERT) generates fixed-size vector representations for text.
     print("\nLoading SentenceTransformer model 'all-MiniLM-L6-v2' (fast & efficient)...")
-    model_sbert = SentenceTransformer('all-MiniLM-L6-v2')
+    
+    # Check for GPU
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"Using device: {device}")
+    
+    model_sbert = SentenceTransformer('all-MiniLM-L6-v2', device=device)
     
     print(f"Encoding {len(train_texts)} training texts... (This may take a few minutes)")
     start_time = time.time()
     # model.encode() converts list of strings to a numpy array of shape (N, 384)
-    X_train = model_sbert.encode(train_texts, show_progress_bar=True)
+    X_train = model_sbert.encode(train_texts, show_progress_bar=True, device=device)
     print(f"Encoding training set took {time.time() - start_time:.2f} seconds.")
     
     print(f"Encoding {len(test_texts)} testing texts...")
     start_time = time.time()
-    X_test = model_sbert.encode(test_texts, show_progress_bar=True)
+    X_test = model_sbert.encode(test_texts, show_progress_bar=True, device=device)
     print(f"Encoding testing set took {time.time() - start_time:.2f} seconds.")
     
     # ---------------------------------------------------------

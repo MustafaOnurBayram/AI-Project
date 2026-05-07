@@ -32,35 +32,25 @@ DEBERTA_DIR = os.path.join(BASE_DIR, "models", "deberta_lora")
 ENSEMBLE_2_3_PATH = os.path.join(BASE_DIR, "models", "ensemble", "meta_learner_2_3.pkl")
 ENSEMBLE_FULL_PATH = os.path.join(BASE_DIR, "models", "ensemble", "meta_learner_full.pkl")
 
-def prepare_liar_dataset():
-    """Load and format the LIAR dataset for binary classification."""
-    print("Loading 'liar' dataset...")
-    liar = load_dataset('liar', cache_dir=DATASET_DIR)
+def prepare_gonzalo_dataset():
+    """Load and format the local GonzaloA dataset for cross-domain testing."""
+    print("Loading local GonzaloA dataset from CSV...")
+    local_csv_path = os.path.join(DATASET_DIR, "GonzaloA_FakeNews", "test.csv")
     
-    # LIAR labels:
-    # 0 = pants-fire, 1 = false, 2 = barely-true
-    # 3 = half-true, 4 = mostly-true, 5 = true
-    # We will map 0, 1, 2 -> Fake (0)
-    # We will map 3, 4, 5 -> Real (1)
+    # GonzaloA test.csv uses semicolon (;) as delimiter
+    dataset = load_dataset('csv', data_files={"test": local_csv_path}, delimiter=';')
     
-    def binarize_labels(example):
-        example['binary_label'] = 0 if example['label'] in [0, 1, 2] else 1
-        return example
-        
-    liar = liar.map(binarize_labels)
-    
-    # We will just evaluate on the LIAR test set
-    texts = liar['test']['statement']
-    labels = liar['test']['binary_label']
+    # GonzaloA columns: [index, title, text, label]
+    # We use 'text' for predictions and 'label' for truth
+    texts = dataset['test']['text']
+    labels = dataset['test']['label']
     
     return texts, labels
 
 def main():
-    print("Starting Week 4: Cross-Domain Evaluation (Generalization Gap)")
+    texts, true_labels = prepare_gonzalo_dataset()
     
-    texts, true_labels = prepare_liar_dataset()
-    
-    print(f"\nEvaluating on {len(texts)} statements from the LIAR dataset.")
+    print(f"\nEvaluating on {len(texts)} samples from the GonzaloA dataset.")
     
     # ---------------------------------------------------------
     # 1. Evaluate SBERT Baseline
@@ -121,7 +111,7 @@ def main():
     # Summary Table
     # ---------------------------------------------------------
     print("\n" + "="*50)
-    print("CROSS-DOMAIN GENERALIZATION RESULTS (LIAR DATASET)")
+    print("CROSS-DOMAIN GENERALIZATION RESULTS (GONZALOA DATASET)")
     print("="*50)
     print(f"Model                  | Cross-Domain Acc")
     print(f"-----------------------------------------")

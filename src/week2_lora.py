@@ -66,10 +66,12 @@ def train_lora_model(model_info, dataset):
         return tokenizer(examples["text"], padding="max_length", truncation=True, max_length=128)
 
     print("Tokenizing datasets...")
+    original_columns = dataset["train"].column_names
     tokenized_datasets = dataset.map(tokenize_function, batched=True)
     
-    # Remove text column as it's not needed by the PyTorch model
-    tokenized_datasets = tokenized_datasets.remove_columns(["text"])
+    # Remove all non-essential columns to prevent PyTorch collation errors
+    cols_to_remove = [col for col in original_columns if col != "label"]
+    tokenized_datasets = tokenized_datasets.remove_columns(cols_to_remove)
     tokenized_datasets = tokenized_datasets.rename_column("label", "labels")
     tokenized_datasets.set_format("torch")
     
@@ -143,8 +145,16 @@ def train_lora_model(model_info, dataset):
 
 
 def main():
-    print("Loading primary dataset...")
-    dataset = load_dataset('ErfanMoosaviMonazzah/fake-news-detection-dataset-English', cache_dir=DATASET_DIR)
+    print("Loading local primary dataset from TSV files...")
+    local_data_dir = os.path.join(DATASET_DIR, "ErfanMoosaviMonazzah___fake-news-detection-dataset-english")
+    
+    data_files = {
+        "train": os.path.join(local_data_dir, "train.tsv"),
+        "validation": os.path.join(local_data_dir, "validation.tsv"),
+        "test": os.path.join(local_data_dir, "test.tsv")
+    }
+    
+    dataset = load_dataset('csv', data_files=data_files, delimiter='\t')
     
     # To save time during dev/testing, one might want to use a small subset of the dataset
     # e.g., dataset['train'] = dataset['train'].select(range(1000))
