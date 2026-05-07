@@ -1,0 +1,8 @@
+transformers
+datasets
+peft
+sentence-transformers
+scikit-learn
+torch
+matplotlib
+seaborn
