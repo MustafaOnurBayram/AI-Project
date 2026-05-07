@@ -128,7 +128,6 @@ def train_lora_model(model_info, dataset):
         load_best_model_at_end=True,
         metric_for_best_model="f1",
         fp16=use_fp16,
-        logging_dir=f"{model_info['save_dir']}/logs",
         logging_steps=100,
         seed=42,
         report_to="none",
@@ -139,7 +138,7 @@ def train_lora_model(model_info, dataset):
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
     )
