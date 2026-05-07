@@ -45,7 +45,16 @@ def prepare_gonzalo_dataset():
     texts = dataset['test']['text']
     labels = dataset['test']['label']
     
-    return texts, labels
+    # Filter out None/NaN text entries that would crash the models
+    clean_texts = []
+    clean_labels = []
+    for t, l in zip(texts, labels):
+        if t is not None and isinstance(t, str) and len(t.strip()) > 0 and l is not None:
+            clean_texts.append(t)
+            clean_labels.append(int(l))
+    
+    print(f"  Loaded {len(clean_texts)} valid samples (filtered {len(texts) - len(clean_texts)} invalid)")
+    return clean_texts, clean_labels
 
 def main():
     texts, true_labels = prepare_gonzalo_dataset()

@@ -135,6 +135,7 @@ def main():
     # Save the plot in the model directory
     plot_path = os.path.join(MODEL_DIR, "confusion_matrix.png")
     plt.savefig(plot_path)
+    plt.show()
     print(f"Confusion matrix plot saved to {plot_path}")
     
     # ---------------------------------------------------------

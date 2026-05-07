@@ -1,1 +1,23 @@
-.venv
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual Environments
+.venv/
+venv/
+env/
+
+# Trained Models (too large for Git)
+models/
+
+# OS Generated
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/

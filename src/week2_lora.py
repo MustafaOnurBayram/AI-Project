@@ -1,4 +1,5 @@
 import os
+import time
 import torch
 from datasets import load_dataset
 from transformers import (
@@ -107,19 +108,25 @@ def train_lora_model(model_info, dataset):
     # ---------------------------------------------------------
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
     
+    # DeBERTa crashes with FP16 gradient scaling — disable for DeBERTa only
+    use_fp16 = torch.cuda.is_available() and ("deberta" not in model_info['hf_path'].lower())
+
     training_args = TrainingArguments(
         output_dir=model_info['save_dir'],
         learning_rate=2e-4,
         per_device_train_batch_size=16,
         per_device_eval_batch_size=16,
-        num_train_epochs=3,      # 3 epochs is standard for fine-tuning
+        num_train_epochs=3,
         weight_decay=0.01,
-        evaluation_strategy="epoch",
+        eval_strategy="epoch",
         save_strategy="epoch",
         load_best_model_at_end=True,
+        metric_for_best_model="f1",
+        fp16=use_fp16,
         logging_dir=f"{model_info['save_dir']}/logs",
         logging_steps=100,
-        report_to="none" # Disable wandb/tensorboard for clean terminal output
+        seed=42,
+        report_to="none",
     )
     
     trainer = Trainer(
@@ -136,7 +143,10 @@ def train_lora_model(model_info, dataset):
     # 4. Train & Save
     # ---------------------------------------------------------
     print(f"Training {model_info['name']}...")
+    start_time = time.time()
     trainer.train()
+    train_time = time.time() - start_time
+    print(f"Training time: {train_time:.1f}s ({train_time/60:.1f} min)")
     
     print(f"Saving final {model_info['name']} LoRA adapter...")
     peft_model.save_pretrained(model_info['save_dir'])
